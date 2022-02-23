@@ -24,9 +24,62 @@ router.put('/:id', async (req, res) => {
     return res.status(403).json('You donot have access to this acount')
   }
 })
+
 //delete user
+router.delete('/:id', async (req, res) => {
+  if (req.body.userId === req.params.id || req.body.isAdmin) {
+    try {
+      const user = await User.findByIdAndDelete(req.params.id)
+      res
+        .status(200)
+        .json(`${user.username} Account has been deleted sucessfully `)
+    } catch (error) {
+      return res.status(500).json(error)
+    }
+  } else {
+    return res.status(403).json('You cannot delete  this acount')
+  }
+})
+
 //get user
+router.get('/:id', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id)
+    const { password, updatedAt, isAdmin, ...ohter } = user._doc
+    res.status(200).json(ohter)
+  } catch (error) {
+    return res.status(500).json(error)
+  }
+})
+
 //follow user
+router.put('/:id/follow', async (req, res) => {
+  if (req.body.userId !== req.params.id) {
+    try {
+      const user = await User.findById(req.params.id)
+      const currentUser = await User.findById(req.body.userId)
+      if (!user.followers.includes(req.body.userId)) {
+        await user.updateOne({
+          $push: {
+            followers: req.body.userId,
+          },
+        })
+        await currentUser.updateOne({
+          $push: {
+            following: req.body.userId,
+          },
+        })
+        res.status(200).json('User has been followed')
+      } else {
+        res.status(403).json('You already follow this user')
+      }
+    } catch (error) {
+      return res.status(500).json(error)
+    }
+  } else {
+    return res.status(403).json('You cannot follow yourself')
+  }
+})
 //unfollow user
 
 module.exports = router
